@@ -163,6 +163,7 @@ static bool threadpool_create_thread_on_demand(threadpool_s *threadpool) {
 
 bool threadpool_enqueue(void *ctx, void *user_data, threadpool_job_cb callback) {
     threadpool_s *threadpool = (threadpool_s *)ctx;
+    bool ret = false;
 
     // Create new job
     threadpool_job_s *job = threadpool_job_create(user_data, callback);
@@ -170,9 +171,6 @@ bool threadpool_enqueue(void *ctx, void *user_data, threadpool_job_cb callback) 
         return false;
 
     mutex_lock(threadpool->queue_lock);
-
-    // Add job to the job queue
-    threadpool_enqueue_job(threadpool, job);
 
     // Create min amount of threads
     while (threadpool->num_threads < threadpool->min_threads) {
@@ -184,11 +182,22 @@ bool threadpool_enqueue(void *ctx, void *user_data, threadpool_job_cb callback) 
     if (threadpool->busy_threads == threadpool->num_threads && threadpool->num_threads < threadpool->max_threads)
         threadpool_create_thread_on_demand(threadpool);
 
+    ret = threadpool->num_threads > 0;
+    if (ret) {
+        // Add job to the job queue
+        threadpool_enqueue_job(threadpool, job);
+    } else {
+        threadpool_job_delete(&job);
+    }
+
     mutex_unlock(threadpool->queue_lock);
 
-    // Wake up waiting threads
-    event_set(threadpool->wakeup_cond);
-    return true;
+    if (ret) {
+        // Wake up waiting threads
+        event_set(threadpool->wakeup_cond);
+    }
+
+    return ret;
 }
 
 static void threadpool_stop_threads(threadpool_s *threadpool) {
