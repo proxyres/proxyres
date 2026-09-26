@@ -11,11 +11,19 @@
 #include "event.h"
 #include "threadpool.h"
 
+TEST(threadpool, create0) {
+    void *pool = threadpool_create(0, 0);
+    EXPECT_EQ(pool, nullptr);
+    if (pool)
+        threadpool_delete(&pool);
+    EXPECT_EQ(pool, nullptr);
+}
+
 TEST(threadpool, create) {
-    void *pool = threadpool_create(1, 1);
+    void *pool = threadpool_create(0, 1);
     ASSERT_NE(pool, nullptr);
     EXPECT_TRUE(threadpool_delete(&pool));
-    ASSERT_EQ(pool, nullptr);
+    EXPECT_EQ(pool, nullptr);
 }
 
 static void threadpool_run_one_worker(void *arg) {
@@ -31,7 +39,7 @@ TEST(threadpool, run_one) {
     threadpool_wait(pool);
     EXPECT_TRUE(job_was_run);
     EXPECT_TRUE(threadpool_delete(&pool));
-    ASSERT_EQ(pool, nullptr);
+    EXPECT_EQ(pool, nullptr);
 }
 
 static void threadpool_run_many_worker(void *arg) {
@@ -49,7 +57,7 @@ TEST(threadpool, run_many) {
     for (int32_t i = 0; i < sizeof(job_was_run); i++)
         EXPECT_TRUE(job_was_run[i]);
     EXPECT_TRUE(threadpool_delete(&pool));
-    ASSERT_EQ(pool, nullptr);
+    EXPECT_EQ(pool, nullptr);
 }
 
 typedef struct threadpool_delete_job_s {
