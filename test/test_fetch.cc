@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -48,7 +49,8 @@ TEST(fetch, missing_host) {
     free(body);
 }
 
-#ifndef HAVE_CURL
+// These cover the raw socket downloader, which curl and NSURLSession do not share
+#if !defined(HAVE_CURL) && !defined(PROXYRES_EXECUTE_PAC)
 TEST(fetch, chunked_not_supported) {
     http_server server(http_response("200 OK", "Transfer-Encoding: chunked\r\n", "4\r\nfunc\r\n0\r\n\r\n"));
     int32_t error = 0;
@@ -102,7 +104,7 @@ TEST(fetch, https_not_supported) {
 
 TEST(fetch, get) {
     int32_t error = 0;
-#ifdef HAVE_CURL
+#if defined(HAVE_CURL) || defined(PROXYRES_EXECUTE_PAC)
     const char *url = "https://google.com/";
     const char *expected_string = "world's information";
 #else
@@ -117,3 +119,65 @@ TEST(fetch, get) {
         free(body);
     }
 }
+
+#if defined(PROXYRES_EXECUTE_PAC) && !defined(HAVE_CURL)
+TEST(fetch, rejects_non_http_scheme) {
+    const char *urls[] = {"data:text/plain,DIRECT", "ftp://example.com/proxy.pac", "not a url"};
+    for (const char *url : urls) {
+        int32_t error = 0;
+        EXPECT_EQ(fetch_get(url, &error), nullptr) << url;
+        EXPECT_EQ(error, EINVAL) << url;
+    }
+}
+
+TEST(fetch, get_file) {
+    const char *tmp_dir = getenv("TMPDIR");
+    std::string path = tmp_dir ? tmp_dir : "/tmp";
+    if (path.back() != '/')
+        path += '/';
+    path += "proxyres_test_fetch.pac";
+    const std::string script = "function FindProxyForURL(url, host) { return 'DIRECT'; }";
+    FILE *file = fopen(path.c_str(), "wb");
+    if (!file)
+        GTEST_SKIP() << "Unable to create " << path;
+    fwrite(script.c_str(), 1, script.size(), file);
+    fclose(file);
+
+    int32_t error = 0;
+    char *body = fetch_get(("file://" + path).c_str(), &error);
+    remove(path.c_str());
+    EXPECT_EQ(error, 0);
+    ASSERT_NE(body, nullptr);
+    EXPECT_STREQ(body, script.c_str());
+    free(body);
+}
+
+TEST(fetch, rejects_http_error_status) {
+    http_server server(http_response("404 Not Found", "Content-Length: 9\r\n", "not found"));
+    int32_t error = 0;
+    EXPECT_EQ(fetch_get(server.url().c_str(), &error), nullptr);
+    EXPECT_EQ(error, EIO);
+}
+
+TEST(fetch, rejects_script_too_large) {
+    const std::string body(SCRIPT_MAX, 'x');
+    // Rejected from the Content-Length header, and while streaming when there is none
+    const std::string headers[] = {"Content-Length: " + std::to_string(body.size()) + "\r\n", ""};
+    for (const std::string &header : headers) {
+        http_server server(http_response("200 OK", header, body));
+        int32_t error = 0;
+        EXPECT_EQ(fetch_get(server.url().c_str(), &error), nullptr) << header;
+        EXPECT_EQ(error, EIO) << header;
+    }
+}
+
+TEST(fetch, rejects_unsafe_redirect) {
+    const char *locations[] = {"ftp://example.com/proxy.pac", "file:///etc/hosts", "data:text/plain,DIRECT"};
+    for (const char *location : locations) {
+        http_server server(http_response("302 Found", std::string("Location: ") + location + "\r\n", ""));
+        int32_t error = 0;
+        EXPECT_EQ(fetch_get(server.url().c_str(), &error), nullptr) << location;
+        EXPECT_EQ(error, EIO) << location;
+    }
+}
+#endif

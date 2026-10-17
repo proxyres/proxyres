@@ -12,6 +12,8 @@ option(PROXYRES_CURL "Enable support for downloading PAC scripts using curl." OF
 option(PROXYRES_DUKTAPE "Use embedded Duktape JavaScript engine." OFF)
 option(PROXYRES_EXECUTE "Enable support for PAC script execution." ON)
 
+option(PROXYRES_CFNETWORK "On Apple, use the native CFNetwork PAC resolver (ignores HTTPS proxies) instead of the JS engine." ON)
+
 option(PROXYRES_USE_CXX "Use the C++ compiler to compile proxyres." OFF)
 
 option(PROXYRES_BUILD_CLI "Build command line utility." ON)
@@ -159,7 +161,8 @@ elseif(APPLE)
                 execute_jscore.c)
         endif()
     endif()
-    if(NOT PROXYRES_DUKTAPE)
+    # The native CFNetwork resolver is only used when the posix resolver isn't
+    if(NOT PROXYRES_EXECUTE OR (NOT PROXYRES_DUKTAPE AND PROXYRES_CFNETWORK))
         list(APPEND PROXYRES_HDRS
             resolver_mac.h)
         list(APPEND PROXYRES_SRCS
@@ -338,9 +341,22 @@ if(PROXYRES_EXECUTE)
         target_compile_definitions(proxyres PUBLIC HAVE_CURL)
         target_sources(proxyres PRIVATE fetch_curl.c)
         target_link_libraries(proxyres CURL::libcurl)
+    elseif(APPLE AND NOT PROXYRES_CFNETWORK)
+        # Compile as C with Objective-C enabled, so consumers don't need the OBJC language
+        target_sources(proxyres PRIVATE fetch_mac.m)
+        set_source_files_properties(fetch_mac.m PROPERTIES
+            LANGUAGE C COMPILE_OPTIONS "-xobjective-c;-fobjc-arc")
+        find_library(FOUNDATION_LIBRARY Foundation)
+        target_link_libraries(proxyres ${FOUNDATION_LIBRARY})
     else()
         target_sources(proxyres PRIVATE fetch_posix.c)
     endif()
+
+    if(APPLE AND NOT PROXYRES_CFNETWORK)
+        target_compile_definitions(proxyres PUBLIC PROXYRES_EXECUTE_PAC)
+    endif()
+elseif(APPLE AND NOT PROXYRES_CFNETWORK)
+    message(WARNING "PROXYRES_CFNETWORK=OFF requires PROXYRES_EXECUTE, using CFNetwork")
 endif()
 
 if(PROXYRES_DUKTAPE)
@@ -432,6 +448,13 @@ endif()
 add_feature_info(PROXYRES_CURL PROXYRES_CURL "Enable support for downloading PAC scripts using curl.")
 add_feature_info(PROXYRES_DUKTAPE PROXYRES_DUKTAPE "Use embedded Duktape JavaScript engine.")
 add_feature_info(PROXYRES_EXECUTE PROXYRES_EXECUTE "Enable support for PAC script execution.")
+if(APPLE)
+    if(PROXYRES_DUKTAPE)
+        add_feature_info(PROXYRES_CFNETWORK PROXYRES_CFNETWORK "Download PAC scripts without NSURLSession.")
+    else()
+        add_feature_info(PROXYRES_CFNETWORK PROXYRES_CFNETWORK "Use the native CFNetwork PAC resolver instead of the JS engine.")
+    endif()
+endif()
 
 add_feature_info(PROXYRES_USE_CXX PROXYRES_USE_CXX "Use the C++ compiler to compile proxyres.")
 

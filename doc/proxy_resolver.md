@@ -18,7 +18,7 @@ The following native OS proxy resolution libraries are used if available:
 |macOS|CFNetwork|Always returns proxy type of request URL.|
 |Windows|WinHTTP|Uses IE proxy configuration.|
 
-When there is no built-in proxy resolution library on the system, we use our own posix-based resolver.
+When there is no built-in proxy resolution library on the system, we use our own posix-based resolver. On macOS this resolver is also used when `PROXYRES_CFNETWORK` is `OFF`.
 
 ## API <!-- omit in toc -->
 
