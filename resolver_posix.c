@@ -69,9 +69,13 @@ static char *proxy_resolver_posix_wpad_discover(void) {
         // Detect proxy auto configuration using DNS
         if (!auto_config_url) {
             log_info("Discovering proxy auto config using WPAD (%s)", "DNS");
-            script = wpad_dns(NULL);
+            script = wpad_dns(NULL, &auto_config_url);
             if (script) {
+                // Cache the script under its url so it is used without fetching it again
+                free(g_proxy_resolver_posix.script);
                 g_proxy_resolver_posix.script = script;
+                free(g_proxy_resolver_posix.script_url);
+                g_proxy_resolver_posix.script_url = auto_config_url ? strdup(auto_config_url) : NULL;
                 g_proxy_resolver_posix.last_fetch_time = time(NULL);
             }
         }

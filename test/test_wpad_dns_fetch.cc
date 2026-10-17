@@ -54,23 +54,28 @@ TEST_F(wpad_dns_fetch, mock_returns_script) {
     mock_pac_script = "function FindProxyForURL() { return \"PROXY proxy:8080\"; }";
     wpad_dns_set_fetch_func(mock_fetch_returns_script);
 
-    char *result = wpad_dns("host.example.com");
+    char *url = nullptr;
+    char *result = wpad_dns("host.example.com", &url);
     ASSERT_NE(result, nullptr);
     EXPECT_STREQ(result, mock_pac_script);
+    EXPECT_STREQ(url, mock_target_url);
     free(result);
+    free(url);
 }
 
 TEST_F(wpad_dns_fetch, mock_all_fail) {
     wpad_dns_set_fetch_func(mock_fetch_all_fail);
 
-    char *result = wpad_dns("host.example.com");
+    char *url = nullptr;
+    char *result = wpad_dns("host.example.com", &url);
     EXPECT_EQ(result, nullptr);
+    EXPECT_EQ(url, nullptr);
 }
 
 TEST_F(wpad_dns_fetch, mock_first_url_succeeds) {
     wpad_dns_set_fetch_func(mock_fetch_first_succeeds);
 
-    char *result = wpad_dns("host.sub.example.com");
+    char *result = wpad_dns("host.sub.example.com", nullptr);
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(mock_fetch_call_count, 1);
     free(result);
