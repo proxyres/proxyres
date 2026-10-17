@@ -16,12 +16,8 @@
 static char *get_proxy_env_var(const char *name, bool check_uppercase) {
     // Check original lowercase environment variable name passed in
     char *proxy = getenv(name);
-
-    if (proxy) {
-        if (*proxy)
-            return proxy;
-        free(proxy);
-    }
+    if (proxy && *proxy)
+        return proxy;
 
     if (check_uppercase) {
         // Allocate a copy of the environment variable name
@@ -36,10 +32,8 @@ static char *get_proxy_env_var(const char *name, bool check_uppercase) {
         // Check uppercase environment variable name
         proxy = getenv(upper_name);
         free(upper_name);
-        if (proxy && !*proxy) {
-            free(proxy);
+        if (proxy && !*proxy)
             proxy = NULL;
-        }
         return proxy;
     }
     return NULL;
