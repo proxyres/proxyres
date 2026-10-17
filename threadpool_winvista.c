@@ -16,6 +16,7 @@ typedef struct threadpool_job_s {
     void *user_data;
     threadpool_job_cb callback;
     struct threadpool_s *pool;
+    bool done;
     struct threadpool_job_s *next;
     struct threadpool_job_s *prev;
 } threadpool_job_s;
@@ -25,6 +26,7 @@ typedef struct threadpool_s {
     TP_CALLBACK_ENVIRON cb_environ;
     void *queue_lock;
     int32_t queue_count;
+    int32_t waiters;
     threadpool_job_s *queue_first;
     threadpool_job_s *queue_last;
 } threadpool_s;
@@ -93,15 +95,46 @@ VOID CALLBACK threadpool_job_callback(PTP_CALLBACK_INSTANCE instance, PVOID cont
     job->callback(job->user_data);
     log_debug("threadpool - worker 0x%" PRIxPTR " - job complete 0x%" PRIxPTR, (intptr_t)work, (intptr_t)job);
 
-    // Remove job from job queue
+    // Mark job as done, it is released after its callback returns
     threadpool_s *threadpool = job->pool;
     mutex_lock(threadpool->queue_lock);
-    threadpool_remove_job(threadpool, job);
+    job->done = true;
     mutex_unlock(threadpool->queue_lock);
+}
+
+static void threadpool_release_done_jobs(threadpool_s *threadpool) {
+    threadpool_job_s *done_jobs = NULL;
+
+    // Waiters may still be using the work handles of done jobs
+    mutex_lock(threadpool->queue_lock);
+    if (!threadpool->waiters) {
+        threadpool_job_s *job = threadpool->queue_first;
+        while (job) {
+            threadpool_job_s *next = job->next;
+            if (job->done) {
+                threadpool_remove_job(threadpool, job);
+                job->next = done_jobs;
+                done_jobs = job;
+            }
+            job = next;
+        }
+    }
+    mutex_unlock(threadpool->queue_lock);
+
+    while (done_jobs) {
+        threadpool_job_s *job = done_jobs;
+        done_jobs = job->next;
+        // Callback may still be returning after marking the job as done
+        WaitForThreadpoolWorkCallbacks(job->handle, FALSE);
+        CloseThreadpoolWork(job->handle);
+        threadpool_job_delete(&job);
+    }
 }
 
 bool threadpool_enqueue(void *ctx, void *user_data, threadpool_job_cb callback) {
     threadpool_s *threadpool = (threadpool_s *)ctx;
+
+    threadpool_release_done_jobs(threadpool);
 
     threadpool_job_s *job = threadpool_job_create(user_data, callback);
     if (!job)
@@ -130,9 +163,16 @@ void threadpool_wait(void *ctx) {
     if (!threadpool)
         return;
 
+    mutex_lock(threadpool->queue_lock);
+    threadpool->waiters++;
+    mutex_unlock(threadpool->queue_lock);
+
     while (true) {
+        // Find the next job that is not done
         mutex_lock(threadpool->queue_lock);
         job = threadpool->queue_first;
+        while (job && job->done)
+            job = job->next;
         if (job)
             work_handle = job->handle;
         mutex_unlock(threadpool->queue_lock);
@@ -140,6 +180,12 @@ void threadpool_wait(void *ctx) {
             break;
         WaitForThreadpoolWorkCallbacks(work_handle, FALSE);
     }
+
+    mutex_lock(threadpool->queue_lock);
+    threadpool->waiters--;
+    mutex_unlock(threadpool->queue_lock);
+
+    threadpool_release_done_jobs(threadpool);
 }
 
 void *threadpool_create(int32_t min_threads, int32_t max_threads) {
