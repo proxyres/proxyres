@@ -113,8 +113,8 @@ void wpad_dns_free_urls(char **urls) {
     free(urls);
 }
 
-// Request WPAD script using DNS
-char *wpad_dns(const char *fqdn) {
+// Request WPAD script using DNS, optionally returning the url it was fetched from
+char *wpad_dns(const char *fqdn, char **url) {
     char hostname[HOST_MAX] = {0};
     int32_t error = 0;
 
@@ -155,8 +155,17 @@ char *wpad_dns(const char *fqdn) {
 #else
         script = fetch_get(urls[i], &error);
 #endif
-        if (script)
+        if (script) {
+            if (url) {
+                *url = strdup(urls[i]);
+                // Discovery fails without the url the script was fetched from
+                if (!*url) {
+                    free(script);
+                    script = NULL;
+                }
+            }
             break;
+        }
         log_info("No server found at %s (%d)", urls[i], error);
     }
 
