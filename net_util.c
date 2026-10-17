@@ -156,8 +156,7 @@ static char *dns_resolve_filter(const char *host, int32_t family, uint8_t max_ad
         goto dns_resolve_error;
 
     // Enumerate each address
-    address = address_info;
-    while (address && list.max_addrs) {
+    for (address = address_info; address && list.max_addrs; address = address->ai_next) {
         // Only copy addresses that match the family filter
         if (list.family == AF_UNSPEC || address->ai_family == list.family) {
             // Ensure there is room to copy something into return string buffer
@@ -180,8 +179,6 @@ static char *dns_resolve_filter(const char *host, int32_t family, uint8_t max_ad
                 list.string[list.string_len] = 0;
             }
         }
-
-        address = address->ai_next;
     }
 
     if (err != 0 && list.string_len == 0)
