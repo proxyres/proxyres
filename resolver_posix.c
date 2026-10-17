@@ -32,6 +32,8 @@ typedef struct g_proxy_resolver_posix_s {
     void *mutex;
     // PAC script
     char *script;
+    // Url the PAC script was fetched from
+    char *script_url;
     time_t last_wpad_time;
     time_t last_fetch_time;
 } g_proxy_resolver_posix_s;
@@ -87,8 +89,8 @@ static char *proxy_resolver_posix_fetch_pac(const char *auto_config_url, int32_t
 
     // Check if the auto config url has changed
     bool url_changed = false;
-    if (g_proxy_resolver_posix.auto_config_url)
-        url_changed = strcmp(g_proxy_resolver_posix.auto_config_url, auto_config_url) != 0;
+    if (g_proxy_resolver_posix.script_url)
+        url_changed = strcmp(g_proxy_resolver_posix.script_url, auto_config_url) != 0;
     else
         url_changed = true;
 
@@ -107,6 +109,9 @@ static char *proxy_resolver_posix_fetch_pac(const char *auto_config_url, int32_t
         free(g_proxy_resolver_posix.script);
         g_proxy_resolver_posix.script = script;
         g_proxy_resolver_posix.last_fetch_time = time(NULL);
+        // Leave the url unset on failure so the next resolve fetches again
+        free(g_proxy_resolver_posix.script_url);
+        g_proxy_resolver_posix.script_url = script ? strdup(auto_config_url) : NULL;
     }
 
     return script;
@@ -267,6 +272,7 @@ bool proxy_resolver_posix_init_ex(void *threadpool) {
 
 bool proxy_resolver_posix_global_cleanup(void) {
     free(g_proxy_resolver_posix.script);
+    free(g_proxy_resolver_posix.script_url);
     free(g_proxy_resolver_posix.auto_config_url);
     mutex_delete(&g_proxy_resolver_posix.mutex);
 
