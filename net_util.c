@@ -187,6 +187,7 @@ static char *dns_resolve_filter(const char *host, int32_t family, uint8_t max_ad
     if (err != 0 && list.string_len == 0)
         goto dns_resolve_error;
 
+    freeaddrinfo(address_info);
     return list.string;
 
 dns_resolve_error:
