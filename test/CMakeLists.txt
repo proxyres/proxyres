@@ -36,9 +36,13 @@ if(PROXYRES_BUILD_CLI)
         COMMAND proxycli config)
     add_test(NAME proxycli-resolve-google
         COMMAND proxycli resolve https://simple.com/ https://google.com/)
+    add_test(NAME proxycli-resolve-verbose
+        COMMAND proxycli --verbose resolve https://simple.com/)
     if(PROXYRES_EXECUTE OR (UNIX AND NOT APPLE))
         add_test(NAME proxycli-execute-google
             COMMAND proxycli execute ${CMAKE_SOURCE_DIR}/test/pac.js https://simple.com/ https://google.com/)
+        add_test(NAME proxycli-execute-verbose
+            COMMAND proxycli --verbose execute ${CMAKE_SOURCE_DIR}/test/pac.js https://simple.com/)
     endif()
 endif()
 
