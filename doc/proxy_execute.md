@@ -120,7 +120,7 @@ function FindProxyForURL(url, host) {
 static const char *url = "https://simple.com/hello-world";
 
 bool execute_simple(void) {
-    bool is_ok = false
+    bool is_ok = false;
     void *proxy_execute = proxy_execute_create();
     if (proxy_execute) {
         if (!proxy_execute_get_proxies_for_url(proxy_execute, pac_script, url)) {
@@ -132,7 +132,6 @@ bool execute_simple(void) {
                 printf("FindProxyForURL for %s = %s\n", url, list);
                 is_ok = true;
             }
-            free(list);
         }
         proxy_execute_delete(&proxy_execute);
     }
