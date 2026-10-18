@@ -317,7 +317,9 @@ void proxy_execute_jsc_delayed_init(void) {
     return;
 
 jsc_init_error:
-    proxy_execute_jsc_global_cleanup();
+    // Unload the library so create fails instead of calling a missing function
+    dlclose(g_proxy_execute_jsc.module);
+    g_proxy_execute_jsc.module = NULL;
 }
 
 void *proxy_execute_jsc_create(void) {
