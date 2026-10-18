@@ -171,6 +171,9 @@ char *fetch_get(const char *url, int32_t *error) {
     // Copy the response body into the buffer
     const size_t response_header_len = (size_t)(body_start - response);
     size_t body_length = response_len - response_header_len;
+    // Ignore anything sent past the content length
+    if (body_length > content_length)
+        body_length = content_length;
     memcpy(body, body_start, body_length);
 
     // Read the remaining body
