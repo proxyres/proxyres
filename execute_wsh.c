@@ -188,12 +188,15 @@ static bool script_engine_find_proxy_for_url(proxy_execute_wsh_s *proxy_execute_
     // Return the result of the FindProxyForURL function
     if (result_ptr.vt != VT_BSTR) {
         log_error("Invalid result type returned from script (%d)", result_ptr.vt);
+        result = DISP_E_TYPEMISMATCH;
         goto script_engine_execute_cleanup;
     }
 
     proxy_execute_wsh->list = wchar_dup_to_utf8(result_ptr.bstrVal);
-    if (!proxy_execute_wsh->list)
+    if (!proxy_execute_wsh->list) {
+        result = E_OUTOFMEMORY;
         goto script_engine_execute_cleanup;
+    }
 
 script_engine_execute_cleanup:
     if (params_args[0].bstrVal)
