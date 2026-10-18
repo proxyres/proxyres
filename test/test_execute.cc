@@ -148,6 +148,15 @@ TEST_P(execute, get_proxies_for_url) {
     }
 }
 
+TEST(execute, null_instance) {
+    void *proxy_execute = NULL;
+    EXPECT_FALSE(proxy_execute_get_proxies_for_url(NULL, "", "http://a/"));
+    EXPECT_EQ(proxy_execute_get_list(NULL), nullptr);
+    EXPECT_EQ(proxy_execute_get_error(NULL), -1);
+    EXPECT_FALSE(proxy_execute_delete(NULL));
+    EXPECT_FALSE(proxy_execute_delete(&proxy_execute));
+}
+
 constexpr const char *execute_error_scripts[] = {
     // Thrown value that is not an Error
     "function FindProxyForURL(url, host) { throw 42; }",

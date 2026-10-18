@@ -41,13 +41,13 @@ bool proxy_execute_get_proxies_for_url(void *ctx, const char *script, const char
 }
 
 const char *proxy_execute_get_list(void *ctx) {
-    if (!g_proxy_execute.proxy_execute_i)
+    if (!ctx || !g_proxy_execute.proxy_execute_i)
         return NULL;
     return g_proxy_execute.proxy_execute_i->get_list(ctx);
 }
 
 int32_t proxy_execute_get_error(void *ctx) {
-    if (!g_proxy_execute.proxy_execute_i)
+    if (!ctx || !g_proxy_execute.proxy_execute_i)
         return -1;
     return g_proxy_execute.proxy_execute_i->get_error(ctx);
 }
