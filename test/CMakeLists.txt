@@ -88,6 +88,7 @@ if(PROXYRES_BUILD_TESTS)
         test_main.cc
         test_net_util.cc
         test_net_adapter.cc
+        test_resolver.cc
         test_threadpool.cc
         test_util.cc)
     if(WIN32)
