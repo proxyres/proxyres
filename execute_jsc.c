@@ -100,17 +100,8 @@ bool proxy_execute_jsc_get_proxies_for_url(void *ctx, const char *script, const 
     bool is_ok = false;
     char *host = NULL;
 
-    if (!proxy_execute)
-        goto jscgtk_execute_cleanup;
-
-    global = g_proxy_execute_jsc.jsc_context_new();
-    if (!global) {
-        log_error("Failed to create global JS context");
-        goto jscgtk_execute_cleanup;
-    }
-
-    // Array of JavaScript function names and corresponding callbacks
-    static struct {
+    // Array of JavaScript function names and corresponding callbacks, local to each execution
+    struct {
         const char *name;
         GCallback callback;
         GType return_type;
@@ -120,6 +111,15 @@ bool proxy_execute_jsc_get_proxies_for_url(void *ctx, const char *script, const 
                      {"dnsResolveEx", G_CALLBACK(proxy_execute_jsc_dns_resolve_ex), G_TYPE_STRING, 1},
                      {"myIpAddress", G_CALLBACK(proxy_execute_jsc_my_ip_address), G_TYPE_STRING, 0},
                      {"myIpAddressEx", G_CALLBACK(proxy_execute_jsc_my_ip_address_ex), G_TYPE_STRING, 0}};
+
+    if (!proxy_execute)
+        goto jscgtk_execute_cleanup;
+
+    global = g_proxy_execute_jsc.jsc_context_new();
+    if (!global) {
+        log_error("Failed to create global JS context");
+        goto jscgtk_execute_cleanup;
+    }
 
     // Register native functions with JavaScript engine
     for (uint32_t i = 0; i < sizeof(functions) / sizeof(functions[0]); i++) {
