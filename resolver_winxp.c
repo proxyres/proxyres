@@ -125,7 +125,7 @@ bool proxy_resolver_winxp_get_proxies_for_url(void *ctx, const char *url) {
         }
 
         // Convert proxy list to uri list
-        if (proxy_resolver->list)
+        if (!proxy_resolver->list)
             proxy_resolver->list = convert_winhttp_proxy_list_to_uri_list(proxy);
         if (!proxy_resolver->list) {
             proxy_resolver->error = ERROR_OUTOFMEMORY;
