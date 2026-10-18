@@ -30,7 +30,7 @@ typedef struct g_proxy_execute_jscore_s {
     JSObjectRef (*JSContextGetGlobalObject)(JSContextRef ctx);
     // Value functions
     bool (*JSValueIsString)(JSContextRef ctx, JSValueRef value);
-    double (*JSValueIsNumber)(JSContextRef ctx, JSValueRef value);
+    bool (*JSValueIsNumber)(JSContextRef ctx, JSValueRef value);
     JSObjectRef (*JSValueToObject)(JSContextRef ctx, JSValueRef value, JSValueRef *exception);
     JSStringRef (*JSValueToStringCopy)(JSContextRef ctx, JSValueRef value, JSValueRef *exception);
     double (*JSValueToNumber)(JSContextRef ctx, JSValueRef value, JSValueRef *exception);
@@ -415,7 +415,7 @@ void proxy_execute_jscore_delayed_init(void) {
     if (!g_proxy_execute_jscore.JSValueIsString)
         goto jscore_init_error;
     g_proxy_execute_jscore.JSValueIsNumber =
-        (double (*)(JSContextRef, JSValueRef))dlsym(g_proxy_execute_jscore.module, "JSValueIsNumber");
+        (bool (*)(JSContextRef, JSValueRef))dlsym(g_proxy_execute_jscore.module, "JSValueIsNumber");
     if (!g_proxy_execute_jscore.JSValueIsNumber)
         goto jscore_init_error;
     g_proxy_execute_jscore.JSValueToObject =
