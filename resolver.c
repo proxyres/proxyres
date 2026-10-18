@@ -334,7 +334,8 @@ bool proxy_resolver_global_cleanup(void) {
         g_proxy_resolver.proxy_resolver_i->global_cleanup();
 
     memset(&g_proxy_resolver, 0, sizeof(g_proxy_resolver));
-#ifdef HAVE_DUKTAPE
+    // Match the platforms where global init calls proxy_execute_global_init
+#if defined(PROXYRES_EXECUTE) && (defined(HAVE_DUKTAPE) || defined(__linux__))
     if (!proxy_execute_global_cleanup())
         return false;
 #endif
