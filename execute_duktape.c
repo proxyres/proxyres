@@ -29,7 +29,11 @@ static duk_ret_t proxy_execute_duktape_dns_resolve(duk_context *ctx) {
         return DUK_RET_ERROR;
 
     char *address = dns_resolve(host, NULL);
-    duk_push_string(ctx, address ? address : "");
+    // Return null for unresolvable hosts, as isInNet and isResolvable expect
+    if (address)
+        duk_push_string(ctx, address);
+    else
+        duk_push_null(ctx);
     free(address);
     return 1;
 }
