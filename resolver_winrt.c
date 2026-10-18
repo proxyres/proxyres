@@ -156,9 +156,9 @@ async_complete_handler_invoke(WinRT_IAsyncOperationCompletedHandler_ProxyConfigu
     HRESULT result = S_OK;
 
     if (!proxy_resolver) {
-        result = E_CHANGED_STATE;
-        log_warn("Proxy resolver was detached from async operation (0x%lx)", result);
-        goto winrt_async_done;
+        // Nothing to release or signal without a resolver
+        log_warn("Proxy resolver was detached from async operation (0x%lx)", E_CHANGED_STATE);
+        return S_OK;
     }
 
     result = WinRT_IAsyncOperation_ProxyConfiguration_GetResults(self->async, &results);
