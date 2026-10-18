@@ -229,8 +229,9 @@ char *wpad_dhcp_adapter_posix(uint8_t bind_ip[4], net_adapter_s *adapter, int32_
     uint8_t *opt = NULL;
 
     opt = dhcp_get_option(&reply, DHCP_OPT_MSGTYPE, &opt_length);
-    if (opt_length != 1 || *opt != DHCP_ACK) {
-        log_error("Invalid DHCP reply (msgtype=%d)", *opt);
+    if (!opt || opt_length != 1 || *opt != DHCP_ACK) {
+        log_error("Invalid DHCP reply (msgtype=%d)", opt ? *opt : -1);
+        free(opt);
         return NULL;
     }
     free(opt);
