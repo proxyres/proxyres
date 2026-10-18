@@ -72,14 +72,16 @@ void proxy_config_set_auto_config_url_override(const char *auto_config_url) {
     if (g_proxy_config.auto_config_url)
         free(g_proxy_config.auto_config_url);
     g_proxy_config.auto_config_url = auto_config_url ? strdup(auto_config_url) : NULL;
-    g_proxy_config.auto_discover_disable = auto_config_url != NULL;
+    // Either override disables auto discovery
+    g_proxy_config.auto_discover_disable = g_proxy_config.auto_config_url || g_proxy_config.proxy;
 }
 
 void proxy_config_set_proxy_override(const char *proxy) {
     if (g_proxy_config.proxy)
         free(g_proxy_config.proxy);
     g_proxy_config.proxy = proxy ? strdup(proxy) : NULL;
-    g_proxy_config.auto_discover_disable = proxy != NULL;
+    // Either override disables auto discovery
+    g_proxy_config.auto_discover_disable = g_proxy_config.auto_config_url || g_proxy_config.proxy;
 }
 
 void proxy_config_set_bypass_list_override(const char *bypass_list) {
