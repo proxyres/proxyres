@@ -122,6 +122,19 @@ TEST_P(util_uri_list, convert_proxy_list) {
     }
 }
 
+TEST(util, convert_proxy_list_with_many_proxies) {
+    std::string proxy_list = "DIRECT";
+    std::string expected = "direct://";
+    for (int32_t i = 1; i < 80; i++) {
+        proxy_list += ";DIRECT";
+        expected += ",direct://";
+    }
+    char *uri_list = convert_proxy_list_to_uri_list(proxy_list.c_str(), nullptr);
+    ASSERT_NE(uri_list, nullptr);
+    EXPECT_STREQ(uri_list, expected.c_str());
+    free(uri_list);
+}
+
 struct should_bypass_list_param {
     const char *url;
     const char *bypass_list;

@@ -407,7 +407,9 @@ char *convert_proxy_list_to_uri_list(const char *proxy_list, const char *default
     const char *proxy_list_end = proxy_list + proxy_list_len;
 
     size_t uri_list_len = 0;
-    size_t max_uri_list = proxy_list_len + 128;  // Extra space for scheme separators
+    // Each proxy can add a scheme of up to 6 characters, "://", and a comma separator
+    size_t max_scheme_len = default_scheme && strlen(default_scheme) > 6 ? strlen(default_scheme) : 6;
+    size_t max_uri_list = proxy_list_len + (str_count_chr(proxy_list, ';') + 1) * (max_scheme_len + 4) + 1;
     char *uri_list = (char *)calloc(max_uri_list, sizeof(char));
     if (!uri_list)
         return NULL;
@@ -466,10 +468,10 @@ char *convert_proxy_list_to_uri_list(const char *proxy_list, const char *default
         uri_list_len += strlen(scheme);
         strncat(uri_list, "://", max_uri_list - uri_list_len - 1);
         uri_list_len += 3;
-        if (host_len > max_uri_list)
-            host_len = max_uri_list - 1;
+        if (host_len > max_uri_list - uri_list_len - 1)
+            host_len = max_uri_list - uri_list_len - 1;
         strncat(uri_list, host_start, host_len);
-        uri_list_len += strlen(scheme) + host_len;
+        uri_list_len += host_len;
 
         // Separate each proxy with comma
         if (config_end != proxy_list_end) {
