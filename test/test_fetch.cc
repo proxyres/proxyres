@@ -22,8 +22,10 @@ TEST(fetch, get_local) {
 }
 
 TEST(fetch, missing_host) {
-    char *body = fetch_get("http:///wpad.dat", NULL);
+    int32_t error = 0;
+    char *body = fetch_get("http:///wpad.dat", &error);
     EXPECT_EQ(body, nullptr);
+    EXPECT_NE(error, 0);
     free(body);
 }
 
