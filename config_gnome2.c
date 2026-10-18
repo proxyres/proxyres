@@ -123,9 +123,8 @@ char *proxy_config_gnome2_get_proxy(const char *scheme) {
             else
                 snprintf(proxy, max_proxy, "%s:%" PRIu32 "", host, port);
         }
-
-        glib_free(host);
     }
+    glib_free(host);
     return proxy;
 }
 

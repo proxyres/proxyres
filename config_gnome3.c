@@ -129,9 +129,8 @@ char *proxy_config_gnome3_get_proxy(const char *scheme) {
             else
                 snprintf(proxy, max_proxy, "%s:%" PRIu32 "", host, port);
         }
-
-        glib_free(host);
     }
+    glib_free(host);
     g_proxy_config_gnome3.g_object_unref(settings);
     return proxy;
 }
