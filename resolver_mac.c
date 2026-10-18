@@ -190,6 +190,12 @@ bool proxy_resolver_mac_get_proxies_for_url(void *ctx, const char *url) {
     CFRunLoopSourceInvalidate(run_loop);
     CFRelease(run_loop);
 
+    // The callback sets either the list or an error, so neither means the run loop timed out
+    if (!proxy_resolver->list && !proxy_resolver->error) {
+        proxy_resolver->error = ETIMEDOUT;
+        log_error("Timed out executing pac url (%" PRId64 ")", proxy_resolver->error);
+    }
+
 mac_done:
 
     is_ok = proxy_resolver->error == 0;
