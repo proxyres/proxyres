@@ -186,10 +186,11 @@ bool str_wildcard_match(const char *str, const char *pattern, bool ignore_case) 
         pattern++;
     }
 
-    if (*pattern && *pattern != '*')
-        return false;
+    // Remaining pattern only matches the end of the string if it is all wildcards
+    while (*pattern == '*')
+        pattern++;
 
-    return true;
+    return *pattern == 0;
 }
 
 // Find host for a given url
