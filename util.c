@@ -299,9 +299,11 @@ char *get_url_from_host(const char *scheme, const char *host) {
         // Use default port based on scheme in host if available, otherwise
         // fallback to using the scheme passed in
         char *host_scheme = get_url_scheme(host, "http");
+        uint16_t port = get_scheme_default_port(host_scheme ? host_scheme : real_scheme);
 
-        snprintf(url + url_len, max_url - url_len, ":%d",
-                 get_scheme_default_port(host_scheme ? host_scheme : real_scheme));
+        // Leave the port out for schemes without a default port
+        if (port)
+            snprintf(url + url_len, max_url - url_len, ":%d", port);
 
         free(host_scheme);
     }

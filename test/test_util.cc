@@ -72,6 +72,8 @@ constexpr get_url_from_host_param get_url_from_host_tests[] = {
     // Default ports of other schemes
     {"http", "socks://proxy", "socks://proxy:1080"},
     {"http", "ftp://proxy", "ftp://proxy:21"},
+    // Unknown scheme has no default port
+    {"http", "gopher://proxy", "gopher://proxy"},
 };
 
 class util_url_from_host : public ::testing::TestWithParam<get_url_from_host_param> {};
