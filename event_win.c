@@ -15,7 +15,7 @@ bool event_wait(void *ctx, int32_t timeout_ms) {
     event_s *event = (event_s *)ctx;
     if (!event)
         return false;
-    if (WaitForSingleObject(event->handle, timeout_ms ? timeout_ms : INFINITE) != WAIT_OBJECT_0)
+    if (WaitForSingleObject(event->handle, timeout_ms < 0 ? INFINITE : (DWORD)timeout_ms) != WAIT_OBJECT_0)
         return false;
     return true;
 }
