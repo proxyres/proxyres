@@ -55,3 +55,23 @@ TEST(net_util, dns_ex_resolve_google) {
         free(ips);
     }
 }
+
+TEST(net_util, ipv4_cidr) {
+    EXPECT_TRUE(is_ipv4_in_cidr_range("192.167.2.1", "192.168.0.1/8"));
+    EXPECT_TRUE(is_ipv4_in_cidr_range("10.1.2.3", "0.0.0.0/0"));
+    EXPECT_FALSE(is_ipv4_in_cidr_range("192.168.0.0", "192.168.0.1/32"));
+    EXPECT_FALSE(is_ipv4_in_cidr_range("192.168.0.1", "192.168.0.1/33"));
+    EXPECT_FALSE(is_ipv4_in_cidr_range("192.168.0.1", "192.168.0.1"));
+    EXPECT_FALSE(is_ipv4_in_cidr_range("::1", "192.168.0.1/8"));
+    EXPECT_FALSE(is_ipv4_in_cidr_range("192.168.0.1", "invalid/8"));
+}
+
+TEST(net_util, ipv6_cidr) {
+    EXPECT_TRUE(is_ipv6_in_cidr_range("::ffff:c0a8:1", "::ffff:c0a0:1/108"));
+    EXPECT_TRUE(is_ipv6_in_cidr_range("2001:db8::1", "::/0"));
+    EXPECT_FALSE(is_ipv6_in_cidr_range("::ffff:c0a8:0", "::ffff:c0a8:1/128"));
+    EXPECT_FALSE(is_ipv6_in_cidr_range("::1", "::1/129"));
+    EXPECT_FALSE(is_ipv6_in_cidr_range("127.0.0.1", "::1/128"));
+    EXPECT_FALSE(is_ipv6_in_cidr_range("::1", "::1"));
+    EXPECT_FALSE(is_ipv6_in_cidr_range("::1", "invalid/64"));
+}

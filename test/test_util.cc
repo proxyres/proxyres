@@ -68,6 +68,9 @@ constexpr get_url_from_host_param get_url_from_host_tests[] = {
     {"http", "https://bing.com", "https://bing.com:443"},
     // Https mixed-scheme
     {"https", "http://bing.com", "http://bing.com:80"},
+    // Default ports of other schemes
+    {"http", "socks://proxy", "socks://proxy:1080"},
+    {"http", "ftp://proxy", "ftp://proxy:21"},
 };
 
 class util_url_from_host : public ::testing::TestWithParam<get_url_from_host_param> {};
@@ -82,6 +85,38 @@ TEST_P(util_url_from_host, get) {
         EXPECT_STREQ(host_url, param.expected);
         free(host_url);
     }
+}
+
+struct strip_host_port_param {
+    const char *host;
+    const char *expected_host;
+    uint16_t expected_port;
+
+    friend std::ostream &operator<<(std::ostream &os, const strip_host_port_param &param) {
+        return os << "host: " << param.host;
+    }
+};
+
+constexpr strip_host_port_param strip_host_port_tests[] = {
+    {"example.com", "example.com", 0},
+    {"example.com:8080", "example.com", 8080},
+    {"example.com:0", "example.com", 0},
+    {"[::1]", "[::1]", 0},
+    {"[::1]:80", "[::1]", 80},
+    // Unterminated IPv6 literal
+    {"[::1", "[::1", 0},
+};
+
+class util_strip_host_port : public ::testing::TestWithParam<strip_host_port_param> {};
+
+INSTANTIATE_TEST_SUITE_P(util, util_strip_host_port, testing::ValuesIn(strip_host_port_tests));
+
+TEST_P(util_strip_host_port, strip) {
+    const auto &param = GetParam();
+    char *host = strdup(param.host);
+    EXPECT_EQ(strip_host_port(host, strlen(host), 0), param.expected_port);
+    EXPECT_STREQ(host, param.expected_host);
+    free(host);
 }
 
 struct convert_proxy_list_to_uri_list_param {
@@ -106,6 +141,8 @@ constexpr convert_proxy_list_to_uri_list_param convert_proxy_list_to_uri_list_te
      "http://myproxy3.com:80,socks://myproxy4.com:1080,direct://"},
     {"PROXY proxy1.example.com:80; PROXY proxy2.example.com:8080", nullptr,
      "http://proxy1.example.com:80,http://proxy2.example.com:8080"},
+    {"PROXY 127.0.0.1:1080", nullptr, "socks://127.0.0.1:1080"},
+    {"PROXY 127.0.0.1:21", nullptr, "ftp://127.0.0.1:21"},
 };
 
 class util_uri_list : public ::testing::TestWithParam<convert_proxy_list_to_uri_list_param> {};
