@@ -317,7 +317,7 @@ uint16_t get_host_port(const char *host, size_t host_len, uint16_t default_port)
         *host == '[' ? str_find_len_str(host, host_len, "]:") : str_find_len_char(host, host_len, ':');
     if (port_start) {
         port_start++;
-        port = (uint16_t)strtoul(port_start, NULL, 0);
+        port = (uint16_t)strtoul(port_start, NULL, 10);
     }
     return port;
 }
@@ -336,7 +336,7 @@ uint16_t strip_host_port(char *host, size_t host_len, uint16_t default_port) {
         // Remove port from host
         host[port_start - host] = 0;
         port_start++;
-        port = (uint16_t)strtoul(port_start, NULL, 0);
+        port = (uint16_t)strtoul(port_start, NULL, 10);
     }
     return port;
 }

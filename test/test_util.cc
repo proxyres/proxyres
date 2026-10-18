@@ -99,6 +99,7 @@ constexpr convert_proxy_list_to_uri_list_param convert_proxy_list_to_uri_list_te
     {"PROXY 127.0.0.1:80", nullptr, "http://127.0.0.1:80"},
     {"PROXY 127.0.0.1:8080", nullptr, "http://127.0.0.1:8080"},
     {"PROXY 127.0.0.1:443", nullptr, "https://127.0.0.1:443"},
+    {"PROXY 127.0.0.1:0443", nullptr, "https://127.0.0.1:0443"},
     {"PROXY myproxy0.com:90", "http", "http://myproxy0.com:90"},
     {"PROXY myproxy1.com:90", "https", "https://myproxy1.com:90"},
     {"HTTP myproxy1.com:80;SOCKS myproxy2.com:1080", nullptr, "http://myproxy1.com:80,socks://myproxy2.com:1080"},
