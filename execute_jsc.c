@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <dlfcn.h>
 #include <glib-object.h>
@@ -198,6 +199,8 @@ jscgtk_execute_cleanup:
         g_object_unref(global);
     }
 
+    if (proxy_execute && !is_ok)
+        proxy_execute->error = EINVAL;
     return is_ok;
 }
 

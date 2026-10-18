@@ -163,5 +163,6 @@ TEST_P(execute_error, get_proxies_for_url) {
     void *proxy_execute = proxy_execute_create();
     ASSERT_NE(proxy_execute, nullptr);
     EXPECT_FALSE(proxy_execute_get_proxies_for_url(proxy_execute, GetParam(), "http://a/"));
+    EXPECT_NE(proxy_execute_get_error(proxy_execute), 0);
     proxy_execute_delete(&proxy_execute);
 }

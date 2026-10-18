@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include <duktape.h>
 
@@ -94,6 +95,7 @@ bool proxy_execute_duktape_get_proxies_for_url(void *ctx, const char *script, co
     if (duk_peval_string(duk_ctx, MOZILLA_PAC_JAVASCRIPT) != 0) {
         log_error("Failed to parse Mozilla PAC JavaScript");
         duk_pop(duk_ctx);
+        proxy_execute->error = EINVAL;
         return false;
     }
 
@@ -101,6 +103,7 @@ bool proxy_execute_duktape_get_proxies_for_url(void *ctx, const char *script, co
     if (duk_peval_string(duk_ctx, script) != 0) {
         log_error("Error evaluating PAC script: %s", duk_safe_to_string(duk_ctx, -1));
         duk_pop(duk_ctx);
+        proxy_execute->error = EINVAL;
         return false;
     }
     duk_pop(duk_ctx);
@@ -111,6 +114,7 @@ bool proxy_execute_duktape_get_proxies_for_url(void *ctx, const char *script, co
     if (!duk_is_function(duk_ctx, -1)) {
         log_error("FindProxyForURL is not a function");
         duk_pop_2(duk_ctx);
+        proxy_execute->error = EINVAL;
         return false;
     }
 
@@ -123,6 +127,7 @@ bool proxy_execute_duktape_get_proxies_for_url(void *ctx, const char *script, co
     if (duk_pcall(duk_ctx, 2) != 0) {
         log_error("Error calling FindProxyForURL: %s", duk_safe_to_string(duk_ctx, -1));
         duk_pop_2(duk_ctx);
+        proxy_execute->error = EINVAL;
         return false;
     }
 
@@ -132,6 +137,8 @@ bool proxy_execute_duktape_get_proxies_for_url(void *ctx, const char *script, co
     }
 
     duk_pop_2(duk_ctx);
+    if (!proxy_execute->list)
+        proxy_execute->error = EINVAL;
     return proxy_execute->list != NULL;
 }
 

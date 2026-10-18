@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <dlfcn.h>
 
@@ -328,7 +329,7 @@ bool proxy_execute_jscore_get_proxies_for_url(void *ctx, const char *script, con
     if (proxy_string) {
         proxy_execute->list = js_string_dup_to_utf8(proxy_string);
         g_proxy_execute_jscore.JSStringRelease(proxy_string);
-        is_ok = true;
+        is_ok = proxy_execute->list != NULL;
     }
 
 jscoregtk_execute_cleanup:
@@ -338,6 +339,8 @@ jscoregtk_execute_cleanup:
         g_proxy_execute_jscore.JSGlobalContextRelease(global);
     }
 
+    if (proxy_execute && !is_ok)
+        proxy_execute->error = EINVAL;
     return is_ok;
 }
 

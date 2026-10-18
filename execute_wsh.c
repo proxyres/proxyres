@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <windows.h>
 #include <initguid.h>
@@ -254,8 +255,10 @@ bool proxy_execute_wsh_get_proxies_for_url(void *ctx, const char *script, const 
     if (!proxy_execute_wsh || !script || !url)
         return false;
 
-    if (!script_engine_create(proxy_execute_wsh))
+    if (!script_engine_create(proxy_execute_wsh)) {
+        proxy_execute_wsh->error = EINVAL;
         return false;
+    }
 
     if (!script_engine_parse_text(proxy_execute_wsh, MOZILLA_PAC_JAVASCRIPT)) {
         log_error("Failed to parse Mozilla PAC JavaScript");
@@ -276,6 +279,8 @@ bool proxy_execute_wsh_get_proxies_for_url(void *ctx, const char *script, const 
 
 execute_wsh_cleanup:
     script_engine_delete(proxy_execute_wsh);
+    if (!is_ok)
+        proxy_execute_wsh->error = EINVAL;
     return is_ok;
 }
 
