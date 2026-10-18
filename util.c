@@ -201,15 +201,15 @@ char *get_url_host(const char *url) {
     else
         host_start = url;
 
-    // Skip username and password
-    const char *at_start = strchr(host_start, '@');
-    if (at_start)
-        host_start = at_start + 1;
-
     // Find the end of the host
     const char *host_end = strstr(host_start, "/");
     if (!host_end)
         host_end = (char *)host_start + strlen(host_start);
+
+    // Skip username and password, which can only appear before the path
+    const char *at_start = str_find_len_char(host_start, (size_t)(host_end - host_start), '@');
+    if (at_start)
+        host_start = at_start + 1;
 
     // Allocate a copy the host
     size_t host_len = (host_end - host_start) + 1;

@@ -23,6 +23,7 @@ constexpr get_url_host_param get_url_host_tests[] = {
     {"google.com/", "google.com"},
     {"https://u:p@google.com/", "google.com"},
     {"https://u:p@www.google.com", "www.google.com"},
+    {"https://google.com/login@evil.com", "google.com"},
 };
 
 class util_url_host : public ::testing::TestWithParam<get_url_host_param> {};
