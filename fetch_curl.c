@@ -61,6 +61,12 @@ char *fetch_get(const char *url, int32_t *error) {
     // Setup url to fetch
     curl_easy_setopt(curl_handle, CURLOPT_URL, url);
     curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
+    // Redirects from a PAC url stay on http and https, as Chromium's PacFileFetcherImpl does
+#if LIBCURL_VERSION_NUM >= 0x075500
+    curl_easy_setopt(curl_handle, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+    curl_easy_setopt(curl_handle, CURLOPT_REDIR_PROTOCOLS, (long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
 
     // Write to memory buffer callback
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, fetch_write_script);
