@@ -76,7 +76,7 @@ Read the proxy bypass list configured on the user's system. The list is comma-se
 
 **Example**
 ```c
-char *bypass_list = proxy_config_get_bypass_list("http");
+char *bypass_list = proxy_config_get_bypass_list();
 printf("Proxy bypass list: %s\n", bypass_list ? bypass_list : "");
 free(bypass_list);
 ```
@@ -106,7 +106,7 @@ Override the user's configured proxy.
 
 **Example**
 ```c
-proxy_config_set_auto_config_url_override("127.0.0.1:8080");
+proxy_config_set_proxy_override("127.0.0.1:8080");
 ```
 
 ### proxy_config_set_bypass_list_override
@@ -164,7 +164,7 @@ void print_proxy_config(void) {
 
     char *auto_config_url = proxy_config_get_auto_config_url();
     printf("  Auto config url: %s\n", auto_config_url ? auto_config_url : "not set");
-    free(auto_config-url);
+    free(auto_config_url);
 
     char *http_proxy = proxy_config_get_proxy("http");
     printf("  HTTP Proxy: %s\n", http_proxy ? http_proxy : "not set");
