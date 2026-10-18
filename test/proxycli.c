@@ -115,6 +115,7 @@ static bool resolve_proxies_for_url_async(int argc, char *argv[], bool verbose) 
         proxy_resolver_delete(&proxy_resolver[i]);
     }
 
+    free(proxy_resolver);
     return is_ok;
 }
 
@@ -218,7 +219,7 @@ int main(int argc, char *argv[]) {
         if (argc <= 3)
             return print_help();
         proxy_execute_global_init();
-        const char *script_path = argv[argi];
+        const char *script_path = argv[argi++];
         while (argi < argc) {
             if (!execute_pac_script(script_path, argv[argi++], verbose))
                 exit_code = 1;
