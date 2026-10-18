@@ -120,8 +120,12 @@ static HRESULT STDMETHODCALLTYPE script_dispatch_invoke(IDispatch *dispatch, DIS
             ip = dns_resolve(host_utf8, NULL);
 
         free(host_utf8);
-        if (!ip)
-            return E_FAIL;
+        if (!ip) {
+            // Return null for unresolvable hosts, as isInNet and isResolvable expect
+            VariantInit(result_ptr);
+            result_ptr->vt = VT_NULL;
+            return S_OK;
+        }
 
         wchar_t *ip_wchar = utf8_dup_to_wchar(ip);
         free(ip);
