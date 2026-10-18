@@ -41,8 +41,11 @@ typedef struct address_list {
 // Calculate the max length of the address string
 static bool my_ip_address_list_length(void *user_data, net_adapter_s *adapter) {
     address_list *list = (address_list *)user_data;
-    // Use different length depending on the address type
-    list->max_string += ((list->family == AF_INET) ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN);
+    // Use different length depending on the address type, AF_UNSPEC writes both
+    if (list->family != AF_INET6)
+        list->max_string += INET_ADDRSTRLEN;
+    if (list->family != AF_INET)
+        list->max_string += INET6_ADDRSTRLEN;
     // Add room for semi-colon separators
     list->max_string += 2;
     return true;
@@ -64,7 +67,7 @@ static bool my_ip_address_list_populate(void *user_data, net_adapter_s *adapter)
         char ip_str[INET_ADDRSTRLEN] = {0};
         inet_ntop(AF_INET, adapter->ip, ip_str, sizeof(ip_str));
         strncat(list->string + list->string_len, ip_str, list->max_string - list->string_len - 1);
-        list->string_len += strlen(ip_str);
+        list->string_len = strlen(list->string);
     }
 
     if (adapter->is_ipv6 && (list->family == AF_INET6 || list->family == AF_UNSPEC)) {
@@ -77,7 +80,7 @@ static bool my_ip_address_list_populate(void *user_data, net_adapter_s *adapter)
         char ipv6_str[INET6_ADDRSTRLEN] = {0};
         inet_ntop(AF_INET6, adapter->ipv6, ipv6_str, sizeof(ipv6_str));
         strncat(list->string + list->string_len, ipv6_str, list->max_string - list->string_len - 1);
-        list->string_len += strlen(ipv6_str);
+        list->string_len = strlen(list->string);
     }
 
     list->max_addrs--;
