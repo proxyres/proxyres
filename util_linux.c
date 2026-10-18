@@ -7,6 +7,16 @@
 
 #include "util_linux.h"
 
+// Get the KDE version from KDE_SESSION_VERSION, which KDE 3 did not set
+static int32_t get_kde_desktop_env(void) {
+    const char *session_version = getenv("KDE_SESSION_VERSION");
+    if (!session_version)
+        return DESKTOP_ENV_KDE3;
+    if (*session_version > '0' && *session_version <= '4')
+        return DESKTOP_ENV_KDE4;
+    return DESKTOP_ENV_KDE5;
+}
+
 int32_t get_desktop_env(void) {
     const char *current_desktop = getenv("XDG_CURRENT_DESKTOP");  // Since 2012
     if (current_desktop) {
@@ -32,9 +42,7 @@ int32_t get_desktop_env(void) {
         } else if (strcasestr(desktop_session, "kde4") || strcasestr(desktop_session, "kde-plasma")) {
             return DESKTOP_ENV_KDE4;
         } else if (strcasestr(desktop_session, "kde")) {
-            if (getenv("KDE_SESSION_VERSION"))
-                return DESKTOP_ENV_KDE4;
-            return DESKTOP_ENV_KDE3;
+            return get_kde_desktop_env();
         }
     }
 
@@ -43,9 +51,7 @@ int32_t get_desktop_env(void) {
             return DESKTOP_ENV_GNOME3;
         return DESKTOP_ENV_GNOME2;
     } else if (getenv("KDE_FULL_SESSION")) {
-        if (getenv("KDE_SESSION_VERSION"))
-            return DESKTOP_ENV_KDE4;
-        return DESKTOP_ENV_KDE3;
+        return get_kde_desktop_env();
     }
 
     return DESKTOP_ENV_UNKNOWN;
