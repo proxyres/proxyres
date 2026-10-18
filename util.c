@@ -427,6 +427,12 @@ char *convert_proxy_list_to_uri_list(const char *proxy_list, const char *default
         if (!config_end)
             config_end = config_start + strlen(config_start);
 
+        // Skip empty entries
+        if (config_end == config_start) {
+            config_start = config_end + 1;
+            continue;
+        }
+
         // Find type boundary
         const char *host_start = config_start;
         const char *scheme = default_scheme;
@@ -462,6 +468,12 @@ char *convert_proxy_list_to_uri_list(const char *proxy_list, const char *default
             scheme = get_port_scheme(port, "http");
         }
 
+        // Separate each proxy with comma
+        if (uri_list_len > 0) {
+            strncat(uri_list, ",", max_uri_list - uri_list_len - 1);
+            uri_list_len += 1;
+        }
+
         // Append proxy to uri list
         strncat(uri_list, scheme, max_uri_list - uri_list_len - 1);
         uri_list_len += strlen(scheme);
@@ -471,12 +483,6 @@ char *convert_proxy_list_to_uri_list(const char *proxy_list, const char *default
             host_len = max_uri_list - 1;
         strncat(uri_list, host_start, host_len);
         uri_list_len += strlen(scheme) + host_len;
-
-        // Separate each proxy with comma
-        if (config_end != proxy_list_end) {
-            strncat(uri_list, ",", max_uri_list - uri_list_len - 1);
-            uri_list_len += 1;
-        }
 
         // Continue to next proxy
         config_start = config_end + 1;

@@ -145,6 +145,10 @@ constexpr convert_proxy_list_to_uri_list_param convert_proxy_list_to_uri_list_te
      "http://proxy1.example.com:80,http://proxy2.example.com:8080"},
     {"PROXY 127.0.0.1:1080", nullptr, "socks://127.0.0.1:1080"},
     {"PROXY 127.0.0.1:21", nullptr, "ftp://127.0.0.1:21"},
+    // Empty entries are ignored
+    {"", nullptr, ""},
+    {"PROXY a:8080;", "http", "http://a:8080"},
+    {"DIRECT; ;PROXY a:8080", "http", "direct://,http://a:8080"},
 };
 
 class util_uri_list : public ::testing::TestWithParam<convert_proxy_list_to_uri_list_param> {};
