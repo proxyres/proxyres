@@ -13,8 +13,7 @@ struct get_winhttp_proxy_by_scheme_param {
     const char *expected;
 
     friend std::ostream &operator<<(std::ostream &os, const get_winhttp_proxy_by_scheme_param &param) {
-        return os << "proxy_list: " << param.proxy_list << std::endl
-                  << "scheme: " << param.scheme;
+        return os << "proxy_list: " << param.proxy_list << std::endl << "scheme: " << param.scheme;
     }
 };
 
@@ -79,4 +78,17 @@ TEST_P(util_winhttp_uri_list, convert_proxy_list) {
         EXPECT_STREQ(uri_list, param.expected);
         free(uri_list);
     }
+}
+
+TEST(util, convert_winhttp_proxy_list_with_many_proxies) {
+    std::string proxy_list = "a";
+    std::string expected = "http://a";
+    for (int32_t i = 1; i < 80; i++) {
+        proxy_list += ";a";
+        expected += ",http://a";
+    }
+    char *uri_list = convert_winhttp_proxy_list_to_uri_list(proxy_list.c_str());
+    ASSERT_NE(uri_list, nullptr);
+    EXPECT_STREQ(uri_list, expected.c_str());
+    free(uri_list);
 }

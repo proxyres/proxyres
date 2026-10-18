@@ -109,8 +109,13 @@ char *convert_winhttp_proxy_list_to_uri_list(const char *proxy_list) {
     size_t proxy_list_len = strlen(proxy_list);
     const char *proxy_list_end = proxy_list + proxy_list_len;
 
+    // Each proxy can add "http://" and a comma separator
+    size_t proxy_count = 1;
+    for (const char *sep = proxy_list; (sep = str_find_first_char(sep, "; \t\r\n")) != NULL; sep++)
+        proxy_count++;
+
     size_t uri_list_len = 0;
-    size_t max_uri_list = proxy_list_len + 128;  // Extra space for scheme separators
+    size_t max_uri_list = proxy_list_len + proxy_count * 8 + 1;
     char *uri_list = (char *)calloc(max_uri_list, sizeof(char));
     if (!uri_list)
         return NULL;
@@ -157,8 +162,8 @@ char *convert_winhttp_proxy_list_to_uri_list(const char *proxy_list) {
         }
 
         // Copy scheme
-        if (config_scheme_len > max_uri_list - 1)
-            config_scheme_len = max_uri_list - 1;
+        if (config_scheme_len > max_uri_list - uri_list_len - 1)
+            config_scheme_len = max_uri_list - uri_list_len - 1;
         strncat(uri_list, config_scheme, config_scheme_len);
         uri_list_len += config_scheme_len;
 
@@ -167,8 +172,8 @@ char *convert_winhttp_proxy_list_to_uri_list(const char *proxy_list) {
 
         // Copy proxy address
         host_len = (size_t)(config_end - host_start);
-        if (host_len > max_uri_list - 1)
-            host_len = max_uri_list - 1;
+        if (host_len > max_uri_list - uri_list_len - 1)
+            host_len = max_uri_list - uri_list_len - 1;
         strncat(uri_list, host_start, host_len);
         uri_list_len += host_len;
 
