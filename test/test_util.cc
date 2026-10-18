@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "util.h"
@@ -158,6 +160,7 @@ constexpr should_bypass_list_param should_bypass_list_tests[] = {
     // Bypass due to url matches
     {"http://google.com/", "google.com", true},
     {"http://google.com/", "google.com,apple.com", true},
+    {"http://apple.com/", "google.com,apple.com", true},
     // Bypass due to url matches with wildcard
     {"http://google.com/", "*google.com", true},
     {"http://google.com/", "google.com,apple.com", true},
@@ -177,6 +180,8 @@ constexpr should_bypass_list_param should_bypass_list_tests[] = {
     {"http://microsoft.com:88/", "microsoft.com", true},
     // Bypass due to matching domain with explicit port
     {"http://microsoft.com:88/", "microsoft.com:88", true},
+    // Bypass due to earlier matching rule despite later rule with different port
+    {"http://microsoft.com/", "microsoft.com,*.com:443", true},
     // Bypass due to matching literal ip
     {"http://192.168.0.1/", "192.168.0.1", true},
     {"http://192.168.0.1/", "192.168.0.1:80", true},
@@ -205,6 +210,17 @@ INSTANTIATE_TEST_SUITE_P(util, util_should_bypass, testing::ValuesIn(should_bypa
 TEST_P(util_should_bypass, list) {
     const auto &param = GetParam();
     EXPECT_EQ(should_bypass_proxy(param.url, param.bypass_list), param.expected);
+}
+
+TEST(util, should_bypass_longest_rule) {
+    // Longest valid hostname with a five digit port fills the rule buffer
+    const std::string domain = std::string(247, 'b') + ".com";
+    const std::string host = "a." + domain;
+    const std::string url = "http://" + host + ":65535/";
+    EXPECT_TRUE(should_bypass_proxy(url.c_str(), (host + ":65535").c_str()));
+    EXPECT_TRUE(should_bypass_proxy(url.c_str(), ("apple.com," + host + ":65535").c_str()));
+    // Subdomain rule with the wildcard prefix
+    EXPECT_TRUE(should_bypass_proxy(url.c_str(), ("." + domain + ":65535").c_str()));
 }
 
 struct str_collapse_chr_param {

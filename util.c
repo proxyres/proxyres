@@ -537,14 +537,17 @@ bool should_bypass_proxy(const char *url, const char *bypass_list) {
         if (!rule_end)
             rule_end = rule_start + strlen(rule_start);
         size_t rule_len = (size_t)(rule_end - rule_start);
-        if (rule_len > sizeof(bypass_rule) - 1)
-            rule_len = sizeof(bypass_rule) - 2;
+
+        // Start each rule with an empty buffer
+        bypass_rule[0] = 0;
 
         // Copy wildcard to match subdomain rule
         if (*rule_start == '.')
             strncat(bypass_rule, "*", sizeof(bypass_rule) - strlen(bypass_rule) - 1);
 
-        // Copy rule to temporary buffer
+        // Copy rule to temporary buffer, leaving room for the null terminator
+        if (rule_len > sizeof(bypass_rule) - strlen(bypass_rule) - 1)
+            rule_len = sizeof(bypass_rule) - strlen(bypass_rule) - 1;
         strncat(bypass_rule, rule_start, rule_len);
 
         // Check if the rule is in cidr notation
@@ -563,8 +566,6 @@ bool should_bypass_proxy(const char *url, const char *bypass_list) {
 
             // If the rule matches hostname of url then bypass proxy
             if (str_wildcard_match(host, bypass_rule, true)) {
-                should_bypass = true;
-
                 // Check bypass rule port
                 if (bypass_rule_port) {
                     if (!host_port) {
@@ -575,11 +576,11 @@ bool should_bypass_proxy(const char *url, const char *bypass_list) {
                             free(scheme);
                         }
                     }
-
-                    // If the host port doesn't match the bypass rule port then don't bypass
-                    if (bypass_rule_port != host_port)
-                        should_bypass = false;
                 }
+
+                // Bypass unless the bypass rule port doesn't match the host port
+                if (!bypass_rule_port || bypass_rule_port == host_port)
+                    should_bypass = true;
             }
         }
 
