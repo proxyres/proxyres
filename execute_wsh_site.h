@@ -37,7 +37,7 @@ static HRESULT STDMETHODCALLTYPE active_script_site_query_interface(IActiveScrip
 
 static HRESULT STDMETHODCALLTYPE active_script_site_get_lcid(IActiveScriptSite *site, LCID *plcid) {
     UNUSED(site);
-    return plcid ? E_POINTER : E_NOTIMPL;
+    return plcid ? E_NOTIMPL : E_POINTER;
 }
 
 static HRESULT STDMETHODCALLTYPE active_script_site_get_item_info(IActiveScriptSite *site, LPCOLESTR name,
