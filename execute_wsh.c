@@ -28,6 +28,8 @@ typedef struct proxy_execute_wsh_s {
     active_script_site_s active_script_site;
     IActiveScript *active_script;
     IActiveScriptParse *active_script_parse;
+    // Whether COM was initialized and must be uninitialized
+    bool com_initialized;
 } proxy_execute_wsh_s;
 
 #ifdef _WIN64
@@ -46,7 +48,8 @@ static bool script_engine_create(proxy_execute_wsh_s *proxy_execute_wsh) {
 
     active_script_site_add_ref(&proxy_execute_wsh->active_script_site.site);
 
-    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    // Fails with RPC_E_CHANGED_MODE if the thread already uses another concurrency model
+    proxy_execute_wsh->com_initialized = SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 
     CLSID lang_clsid;
 
@@ -230,7 +233,10 @@ static bool script_engine_delete(proxy_execute_wsh_s *proxy_execute_wsh) {
         }
     }
 
-    CoUninitialize();
+    if (proxy_execute_wsh->com_initialized) {
+        CoUninitialize();
+        proxy_execute_wsh->com_initialized = false;
+    }
     return true;
 }
 
