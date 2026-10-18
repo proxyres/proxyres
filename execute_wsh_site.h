@@ -114,6 +114,9 @@ static HRESULT STDMETHODCALLTYPE active_script_site_on_script_error(IActiveScrip
         printf("  %s", excep_description);
         free(excep_description);
     }
+    SysFreeString(excep_info.bstrSource);
+    SysFreeString(excep_info.bstrDescription);
+    SysFreeString(excep_info.bstrHelpFile);
 
     DWORD source_ctx = 0;
     ULONG line_num = 0;

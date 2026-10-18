@@ -112,6 +112,9 @@ static bool script_engine_parse_text(proxy_execute_wsh_s *proxy_execute_wsh, con
     HRESULT result = IActiveScriptParse_ParseScriptText(proxy_execute_wsh->active_script_parse, script_bstr,
                                                         WSH_SCRIPT_NAME, NULL, NULL, 0, 0, 0, NULL, &excep_info);
     SysFreeString(script_bstr);
+    SysFreeString(excep_info.bstrSource);
+    SysFreeString(excep_info.bstrDescription);
+    SysFreeString(excep_info.bstrHelpFile);
 
     if (FAILED(result)) {
         log_error("Failed to parse script text (%08lx)", result);
@@ -125,6 +128,7 @@ static bool script_engine_find_proxy_for_url(proxy_execute_wsh_s *proxy_execute_
     IDispatch *dispatch = NULL;
     DISPID disp_id;
     VARIANTARG params_args[2] = {0};
+    VARIANT result_ptr = {0};
 
     HRESULT result = IActiveScript_GetScriptDispatch(proxy_execute_wsh->active_script, NULL, &dispatch);
     if (FAILED(result)) {
@@ -177,7 +181,6 @@ static bool script_engine_find_proxy_for_url(proxy_execute_wsh_s *proxy_execute_
     free(host_wchar);
 
     // Invoke the FindProxyForURL function
-    VARIANT result_ptr;
     result = IDispatch_Invoke(dispatch, disp_id, &IID_NULL, LOCALE_NEUTRAL, DISPATCH_METHOD, &params, &result_ptr, NULL,
                               NULL);
     if (FAILED(result)) {
@@ -196,6 +199,7 @@ static bool script_engine_find_proxy_for_url(proxy_execute_wsh_s *proxy_execute_
         goto script_engine_execute_cleanup;
 
 script_engine_execute_cleanup:
+    VariantClear(&result_ptr);
     if (params_args[0].bstrVal)
         SysFreeString(params_args[0].bstrVal);
     if (params_args[1].bstrVal)
