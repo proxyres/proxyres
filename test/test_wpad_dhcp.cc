@@ -242,6 +242,15 @@ TEST(dhcp_parse, full_ack_with_wpad) {
     free(opt);
 }
 
+TEST(wpad_dhcp, is_url_allowed) {
+    EXPECT_TRUE(wpad_dhcp_is_url_allowed("http://wpad.example.com/wpad.dat"));
+    EXPECT_TRUE(wpad_dhcp_is_url_allowed("HTTPS://wpad.example.com/wpad.dat"));
+    EXPECT_FALSE(wpad_dhcp_is_url_allowed("file:///etc/proxy.pac"));
+    EXPECT_FALSE(wpad_dhcp_is_url_allowed("ftp://wpad.example.com/wpad.dat"));
+    // Url without a scheme
+    EXPECT_FALSE(wpad_dhcp_is_url_allowed("wpad.example.com/wpad.dat"));
+}
+
 TEST(wpad_dhcp, discover) {
     // Queries the operating system's DHCP interfaces, which find no WPAD url on most networks
     char *url = wpad_dhcp(1);

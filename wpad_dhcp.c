@@ -2,6 +2,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifdef _WIN32
+#  define strcasecmp _stricmp
+#endif
 
 #include "log.h"
 #include "net_adapter.h"
@@ -32,6 +37,15 @@ typedef struct wpad_dhcp_adapter_enum_s {
     bool query_primary;
 } wpad_dhcp_adapter_enum_s;
 
+// WPAD fetches the config file over HTTP, and any host on the network can answer DHCP. Chromium's
+// PacFileFetcherImpl::IsUrlSchemeAllowed likewise only fetches PAC urls over http, https and data.
+bool wpad_dhcp_is_url_allowed(const char *url) {
+    char *scheme = get_url_scheme(url, NULL);
+    bool is_allowed = scheme && (!strcasecmp(scheme, "http") || !strcasecmp(scheme, "https"));
+    free(scheme);
+    return is_allowed;
+}
+
 static bool wpad_dhcp_enum_adapter(void *user_data, net_adapter_s *adapter) {
     wpad_dhcp_adapter_enum_s *adapter_enum = (wpad_dhcp_adapter_enum_s *)user_data;
 
@@ -52,6 +66,11 @@ static bool wpad_dhcp_enum_adapter(void *user_data, net_adapter_s *adapter) {
 
     // Get WPAD from adapter's DHCP server
     adapter_enum->url = wpad_dhcp_adapter(adapter->ip, adapter, adapter_enum->timeout_sec);
+    if (adapter_enum->url && !wpad_dhcp_is_url_allowed(adapter_enum->url)) {
+        log_warn("Ignoring WPAD url with unsupported scheme %s", adapter_enum->url);
+        free(adapter_enum->url);
+        adapter_enum->url = NULL;
+    }
     if (adapter_enum->url)
         return false;
 
