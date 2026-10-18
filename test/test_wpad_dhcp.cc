@@ -1,9 +1,12 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <gtest/gtest.h>
 
+#include "net_adapter.h"
+#include "wpad_dhcp.h"
 #include "wpad_dhcp_posix_p.h"
 
 // Build a minimal DHCP ACK message with magic and given options
@@ -237,4 +240,11 @@ TEST(dhcp_parse, full_ack_with_wpad) {
     EXPECT_EQ(opt_length, url_len);
     EXPECT_STREQ((char *)opt, url);
     free(opt);
+}
+
+TEST(wpad_dhcp, discover) {
+    // Queries the operating system's DHCP interfaces, which find no WPAD url on most networks
+    char *url = wpad_dhcp(1);
+    printf("wpad: %s\n", url ? url : "(null)");
+    free(url);
 }
