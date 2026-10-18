@@ -84,6 +84,7 @@ if(PROXYRES_BUILD_TESTS)
 
     set(TEST_SRCS
         test_config.cc
+        test_log.cc
         test_main.cc
         test_net_util.cc
         test_net_adapter.cc
