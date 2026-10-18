@@ -216,7 +216,7 @@ async_complete_handler_invoke(WinRT_IAsyncOperationCompletedHandler_ProxyConfigu
                 if (url_utf8) {
                     // Append proxy to proxy list
                     strncat(proxy_resolver->list, url_utf8, max_list - list_len - 1);
-                    list_len += strlen(url_utf8);
+                    list_len = strlen(proxy_resolver->list);
                     free(url_utf8);
                 }
                 WindowsDeleteString(url_string);
@@ -228,7 +228,7 @@ async_complete_handler_invoke(WinRT_IAsyncOperationCompletedHandler_ProxyConfigu
         // Separate each proxy url with a comma
         if (i != size - 1) {
             strncat(proxy_resolver->list, ",", max_list - list_len - 1);
-            list_len++;
+            list_len = strlen(proxy_resolver->list);
         }
     }
 

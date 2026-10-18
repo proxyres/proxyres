@@ -105,19 +105,19 @@ void CALLBACK proxy_resolver_win8_winhttp_status_callback(HINTERNET Internet, DW
             switch (entry->ProxyScheme) {
             case INTERNET_SCHEME_HTTP:
                 strncat(proxy_resolver->list, "http://", max_list - list_len - 1);
-                list_len += 7;
+                list_len = strlen(proxy_resolver->list);
                 break;
             case INTERNET_SCHEME_HTTPS:
                 strncat(proxy_resolver->list, "https://", max_list - list_len - 1);
-                list_len += 8;
+                list_len = strlen(proxy_resolver->list);
                 break;
             case INTERNET_SCHEME_SOCKS:
                 strncat(proxy_resolver->list, "socks://", max_list - list_len - 1);
-                list_len += 8;
+                list_len = strlen(proxy_resolver->list);
                 break;
             case INTERNET_SCHEME_FTP:
                 strncat(proxy_resolver->list, "ftp://", max_list - list_len - 1);
-                list_len += 6;
+                list_len = strlen(proxy_resolver->list);
                 break;
             }
 
@@ -125,7 +125,7 @@ void CALLBACK proxy_resolver_win8_winhttp_status_callback(HINTERNET Internet, DW
             char *proxy_url = wchar_dup_to_utf8(entry->pwszProxy);
             if (proxy_url) {
                 strncat(proxy_resolver->list, proxy_url, max_list - list_len - 1);
-                list_len += strlen(proxy_url);
+                list_len = strlen(proxy_resolver->list);
                 free(proxy_url);
             }
 
@@ -138,13 +138,13 @@ void CALLBACK proxy_resolver_win8_winhttp_status_callback(HINTERNET Internet, DW
         } else {
             // No proxy
             strncat(proxy_resolver->list, "direct://", max_list - list_len - 1);
-            list_len += 9;
+            list_len = strlen(proxy_resolver->list);
         }
 
         // Separate each proxy url with a comma
         if (i != proxy_result.cEntries - 1) {
             strncat(proxy_resolver->list, ",", max_list - list_len - 1);
-            list_len++;
+            list_len = strlen(proxy_resolver->list);
         }
     }
 
