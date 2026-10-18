@@ -144,5 +144,5 @@ bool proxy_config_global_cleanup(void) {
         g_proxy_config.proxy_config_i->global_cleanup();
 
     memset(&g_proxy_config, 0, sizeof(g_proxy_config));
-    return false;
+    return true;
 }
