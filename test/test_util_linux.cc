@@ -48,6 +48,8 @@ constexpr get_config_value_param get_config_value_tests[] = {
     // No key should return NULL
     {"Proxy Settings", "Does Not Exist", NULL},
     {"Notification Messages", "WarnOnLeaveSSLMode", "false"},
+    // Keys in other sections are not matched
+    {"Notification Messages", "ProxyType", NULL},
 };
 
 class util_config : public ::testing::TestWithParam<get_config_value_param> {};
@@ -94,12 +96,14 @@ constexpr get_desktop_env_param get_desktop_env_tests[] = {
     {{{"XDG_CURRENT_DESKTOP", "KDE"}, {"KDE_SESSION_VERSION", "4"}}, DESKTOP_ENV_KDE4},
     {{{"DESKTOP_SESSION", "mate"}}, DESKTOP_ENV_GNOME},
     {{{"DESKTOP_SESSION", "kde-plasma"}}, DESKTOP_ENV_KDE4},
+    {{{"KDE_FULL_SESSION", "true"}, {"KDE_SESSION_VERSION", "5"}}, DESKTOP_ENV_KDE5},
     {{{"KDE_FULL_SESSION", "true"}}, DESKTOP_ENV_KDE3},
     {{}, DESKTOP_ENV_UNKNOWN},
     // Unrecognized desktops fall through to the older variables
     {{{"XDG_CURRENT_DESKTOP", "LXQt"}}, DESKTOP_ENV_UNKNOWN},
     {{{"DESKTOP_SESSION", "lxqt"}}, DESKTOP_ENV_UNKNOWN},
     {{{"DESKTOP_SESSION", "gnome"}}, DESKTOP_ENV_GNOME},
+    {{{"DESKTOP_SESSION", "kde"}, {"KDE_SESSION_VERSION", "5"}}, DESKTOP_ENV_KDE5},
     {{{"GNOME_DESKTOP_SESSION_ID", "this-is-deprecated"}}, DESKTOP_ENV_GNOME},
 };
 
