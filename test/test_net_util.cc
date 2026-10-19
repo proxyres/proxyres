@@ -26,6 +26,35 @@ TEST(net_util, my_ip_address_ex) {
     }
 }
 
+TEST(net_util, dns_resolve_literal) {
+    int32_t error = 0;
+    char *ip = dns_resolve("127.0.0.1", &error);
+    EXPECT_EQ(error, 0);
+    EXPECT_STREQ(ip, "127.0.0.1");
+    free(ip);
+
+    ip = dns_resolve_ex("::1", &error);
+    EXPECT_EQ(error, 0);
+    EXPECT_STREQ(ip, "::1");
+    free(ip);
+
+    // IPv6 address has no IPv4 equivalent
+    ip = dns_resolve("::1", &error);
+    EXPECT_EQ(ip, nullptr);
+    EXPECT_NE(error, 0);
+    free(ip);
+}
+
+TEST(net_util, dns_resolve_localhost) {
+    int32_t error = 0;
+    char *ip = dns_resolve("localhost", &error);
+    EXPECT_EQ(error, 0);
+    ASSERT_NE(ip, nullptr);
+    // Any address in the loopback range
+    EXPECT_TRUE(is_ipv4_in_cidr_range(ip, "127.0.0.0/8")) << ip;
+    free(ip);
+}
+
 TEST(net_util, dns_resolve_google) {
     int32_t error = 0;
     char *ip = dns_resolve("google.com", &error);
