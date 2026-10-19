@@ -33,6 +33,8 @@ constexpr get_winhttp_proxy_by_scheme_param get_winhttp_proxy_by_scheme_tests[] 
     // Two schemes in proxy list reversed
     {"http=11proxy.com;https=12proxy.com:443", "https", "12proxy.com:443"},
     {"https=13proxy.com;http=14proxy.com:80;", "https", "13proxy.com"},
+    // Scheme of a url is used
+    {"http=a:80;https=b:443", "https://example.com/", "b:443"},
 };
 
 class util_winhttp_proxy : public ::testing::TestWithParam<get_winhttp_proxy_by_scheme_param> {};

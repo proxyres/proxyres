@@ -26,6 +26,7 @@ constexpr get_url_host_param get_url_host_tests[] = {
     {"https://u:p@google.com/", "google.com"},
     {"https://u:p@www.google.com", "www.google.com"},
     {"https://google.com/login@evil.com", "google.com"},
+    {"http://example.com:8080/", "example.com:8080"},
 };
 
 class util_url_host : public ::testing::TestWithParam<get_url_host_param> {};
@@ -40,6 +41,12 @@ TEST_P(util_url_host, get) {
         EXPECT_STREQ(host, param.expected);
         free(host);
     }
+}
+
+TEST(util, get_url_path) {
+    EXPECT_STREQ(get_url_path("http://example.com"), "/");
+    EXPECT_STREQ(get_url_path("http://example.com/wpad.dat"), "/wpad.dat");
+    EXPECT_STREQ(get_url_path("example.com/a/b"), "/a/b");
 }
 
 struct get_url_from_host_param {
@@ -71,6 +78,8 @@ constexpr get_url_from_host_param get_url_from_host_tests[] = {
     {"http", "https://bing.com", "https://bing.com:443"},
     // Https mixed-scheme
     {"https", "http://bing.com", "http://bing.com:80"},
+    // Trailing slash is removed
+    {"http", "http://127.0.0.1:8000/", "http://127.0.0.1:8000"},
     // Default ports of other schemes
     {"http", "socks://proxy", "socks://proxy:1080"},
     {"http", "ftp://proxy", "ftp://proxy:21"},
@@ -105,6 +114,8 @@ struct strip_host_port_param {
 constexpr strip_host_port_param strip_host_port_tests[] = {
     {"example.com", "example.com", 0},
     {"example.com:8080", "example.com", 8080},
+    {"example.com:010", "example.com", 10},
+    {"example.com:08080", "example.com", 8080},
     {"example.com:0", "example.com", 0},
     {"[::1]", "[::1]", 0},
     {"[::1]:80", "[::1]", 80},
@@ -180,6 +191,19 @@ TEST(util, convert_proxy_list_with_many_proxies) {
     ASSERT_NE(uri_list, nullptr);
     EXPECT_STREQ(uri_list, expected.c_str());
     free(uri_list);
+}
+
+TEST(util, str_wildcard_match) {
+    EXPECT_TRUE(str_wildcard_match("google.com", "*google.com", true));
+    EXPECT_TRUE(str_wildcard_match("my.google.com", "*.google.com", true));
+    EXPECT_FALSE(str_wildcard_match("google.com", "*.google.com", true));
+    EXPECT_TRUE(str_wildcard_match("GOOGLE.com", "google.*", true));
+    EXPECT_FALSE(str_wildcard_match("GOOGLE.com", "google.*", false));
+    EXPECT_TRUE(str_wildcard_match("abc", "a*c", false));
+    EXPECT_TRUE(str_wildcard_match("abc", "abc*", false));
+    EXPECT_FALSE(str_wildcard_match("abc", "abc*x", false));
+    EXPECT_TRUE(str_wildcard_match("", "*", false));
+    EXPECT_FALSE(str_wildcard_match("", "a", false));
 }
 
 struct should_bypass_list_param {
@@ -260,6 +284,13 @@ constexpr should_bypass_list_param should_bypass_list_tests[] = {
     {"http://192.168.0.0/", "192.168.0.1/32", false},
     {"http://[::ffff:c0a8:2]/", "::ffff:c0a8:1/127", false},
     {"http://[::ffff:c0a8:0]/", "::ffff:c0a8:1/128", false},
+    // Bypass due to any rule matching, not just the first
+    {"http://apple.com/", "google.com, apple.com", true},
+    {"http://10.1.2.3/", "foo.com,10.0.0.0/8", true},
+    // Bypass due to an earlier rule even when a later rule's port does not match
+    {"http://example.com/", "example.com,example.com:8080", true},
+    // Bypass due to an explicit rule even with <-loopback>
+    {"http://localhost/", "<-loopback>,localhost", true},
 };
 
 class util_should_bypass : public ::testing::TestWithParam<should_bypass_list_param> {};
@@ -269,6 +300,14 @@ INSTANTIATE_TEST_SUITE_P(util, util_should_bypass, testing::ValuesIn(should_bypa
 TEST_P(util_should_bypass, list) {
     const auto &param = GetParam();
     EXPECT_EQ(should_bypass_proxy(param.url, param.bypass_list), param.expected);
+}
+
+TEST(util, should_bypass_long_list) {
+    std::string bypass_list = "abcdefgh.com";
+    for (int32_t i = 1; i < 500; i++)
+        bypass_list += ",abcdefgh.com";
+    EXPECT_FALSE(should_bypass_proxy("http://x.org/", bypass_list.c_str()));
+    EXPECT_TRUE(should_bypass_proxy("http://abcdefgh.com/", bypass_list.c_str()));
 }
 
 TEST(util, should_bypass_longest_rule) {
