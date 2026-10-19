@@ -30,19 +30,46 @@ if(PROXYRES_BUILD_CLI)
         return()
     endif()
 
+    add_test(NAME proxycli-usage
+        COMMAND proxycli)
+    set_tests_properties(proxycli-usage PROPERTIES WILL_FAIL TRUE)
     add_test(NAME proxycli-help
         COMMAND proxycli --help)
+    set_tests_properties(proxycli-help PROPERTIES
+        PASS_REGULAR_EXPRESSION "config.*resolve")
     add_test(NAME proxycli-config
         COMMAND proxycli config)
+    add_test(NAME proxycli-config-auto-discover
+        COMMAND proxycli config auto_discover)
     add_test(NAME proxycli-resolve-google
         COMMAND proxycli resolve https://simple.com/ https://google.com/)
+    add_test(NAME proxycli-resolve-localhost
+        COMMAND proxycli resolve http://localhost/ http://127.0.0.1/)
     add_test(NAME proxycli-resolve-verbose
         COMMAND proxycli --verbose resolve https://simple.com/)
+    # Windows sometimes loses buffered output at exit after WinInet reads the proxy config
+    if(NOT WIN32)
+        set_tests_properties(proxycli-config PROPERTIES
+            PASS_REGULAR_EXPRESSION "^Proxy configuration\n  Auto discover: .*  Proxy bypass: ")
+        set_tests_properties(proxycli-config-auto-discover PROPERTIES
+            PASS_REGULAR_EXPRESSION "^(enabled|disabled)\n")
+        set_tests_properties(proxycli-resolve-localhost PROPERTIES
+            PASS_REGULAR_EXPRESSION "^http://localhost/=direct://\nhttp://127\\.0\\.0\\.1/=direct://")
+        set_tests_properties(proxycli-resolve-verbose PROPERTIES
+            PASS_REGULAR_EXPRESSION "^Resolving proxy for https://simple\\.com/\n  Proxy: "
+            FAIL_REGULAR_EXPRESSION "Unable to resolve proxy")
+    endif()
     if(PROXYRES_EXECUTE OR (UNIX AND NOT APPLE))
         add_test(NAME proxycli-execute-google
             COMMAND proxycli execute ${CMAKE_SOURCE_DIR}/test/pac.js https://simple.com/ https://google.com/)
+        add_test(NAME proxycli-execute-list
+            COMMAND proxycli execute ${CMAKE_SOURCE_DIR}/test/pac.js http://simple.com/ https://multi.com/ http://plain/)
+        set_tests_properties(proxycli-execute-list PROPERTIES
+            PASS_REGULAR_EXPRESSION "^PROXY no-such-proxy:80\r?\nHTTPS some-such-proxy:443\;HTTPS any-such-proxy:41\r?\nDIRECT")
         add_test(NAME proxycli-execute-verbose
             COMMAND proxycli --verbose execute ${CMAKE_SOURCE_DIR}/test/pac.js https://simple.com/)
+        set_tests_properties(proxycli-execute-verbose PROPERTIES
+            PASS_REGULAR_EXPRESSION "Executing PAC script .*/pac\\.js for https://simple\\.com/\r?\n  Proxy: PROXY no-such-proxy:80")
     endif()
 endif()
 
