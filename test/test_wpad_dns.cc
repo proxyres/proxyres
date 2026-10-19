@@ -89,3 +89,15 @@ TEST(wpad_dns_urls, deeply_nested) {
     EXPECT_EQ(urls[5], nullptr);
     wpad_dns_free_urls(urls);
 }
+
+TEST(wpad_dns_urls, consecutive_dots) {
+    // Consecutive dots are collapsed
+    int32_t count = 0;
+    char **urls = wpad_dns_get_urls("host..example.com", &count);
+    ASSERT_NE(urls, nullptr);
+    ASSERT_EQ(count, 2);
+    EXPECT_STREQ(urls[0], "http://wpad.host.example.com/wpad.dat");
+    EXPECT_STREQ(urls[1], "http://wpad.example.com/wpad.dat");
+    EXPECT_EQ(urls[2], nullptr);
+    wpad_dns_free_urls(urls);
+}

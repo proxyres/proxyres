@@ -75,3 +75,12 @@ TEST_F(wpad_dns_fetch, mock_first_url_succeeds) {
     EXPECT_EQ(mock_fetch_call_count, 1);
     free(result);
 }
+
+TEST_F(wpad_dns_fetch, no_candidate_urls) {
+    wpad_dns_set_fetch_func(mock_fetch_first_succeeds);
+
+    // A single label has no WPAD urls so nothing is downloaded
+    char *result = wpad_dns("localhost");
+    EXPECT_EQ(result, nullptr);
+    EXPECT_EQ(mock_fetch_call_count, 0);
+}
