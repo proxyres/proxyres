@@ -13,6 +13,7 @@ TEST(config, override_auto_config_url) {
     ASSERT_NE(auto_config_url, nullptr);
     EXPECT_STREQ(auto_config_url, "http://127.0.0.1:8000/wpad.dat");
     free(auto_config_url);
+    EXPECT_FALSE(proxy_config_get_auto_discover());
 }
 
 TEST(config, override_proxy) {
@@ -21,6 +22,19 @@ TEST(config, override_proxy) {
     ASSERT_NE(proxy, nullptr);
     EXPECT_STREQ(proxy, "http://127.0.0.1:8000/");
     free(proxy);
+    proxy = proxy_config_get_proxy("https");
+    EXPECT_STREQ(proxy, "http://127.0.0.1:8000/");
+    free(proxy);
+    EXPECT_FALSE(proxy_config_get_auto_discover());
+}
+
+TEST(config, override_both_disables_auto_discover) {
+    proxy_config_set_auto_config_url_override("http://127.0.0.1:8000/wpad.dat");
+    proxy_config_set_proxy_override("127.0.0.1:8000");
+    // Clearing one override keeps auto-discovery disabled while the other is set
+    proxy_config_set_proxy_override(NULL);
+    EXPECT_FALSE(proxy_config_get_auto_discover());
+    proxy_config_set_auto_config_url_override(NULL);
 }
 
 TEST(config, override_bypass_list) {
