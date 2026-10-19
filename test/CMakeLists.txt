@@ -100,6 +100,7 @@ if(PROXYRES_BUILD_TESTS)
             test_util_win.cc)
     elseif(UNIX AND NOT APPLE)
         list(APPEND TEST_SRCS
+            test_config_env.cc
             test_util_linux.cc)
     endif()
     if(PROXYRES_EXECUTE)
