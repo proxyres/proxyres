@@ -3,6 +3,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <string>
+#include <thread>
+#include <vector>
+
+#ifdef _WIN32
+#  include <objbase.h>
+#endif
+
 #include <gtest/gtest.h>
 
 #include "execute.h"
@@ -158,10 +166,18 @@ TEST(execute, null_instance) {
 }
 
 constexpr const char *execute_error_scripts[] = {
+    // Syntax error
+    "function FindProxyForURL(url, host) {",
+    // Missing FindProxyForURL
+    "var a = 1;",
+    // Thrown Error
+    "function FindProxyForURL(url, host) { throw new Error('boom'); }",
     // Thrown value that is not an Error
     "function FindProxyForURL(url, host) { throw 42; }",
     // Undefined function
     "function FindProxyForURL(url, host) { return notDefined(host); }",
+    // Result that is not a string
+    "function FindProxyForURL(url, host) { return undefined; }",
 };
 
 class execute_error : public ::testing::TestWithParam<const char *> {};
@@ -175,3 +191,46 @@ TEST_P(execute_error, get_proxies_for_url) {
     EXPECT_NE(proxy_execute_get_error(proxy_execute), 0);
     proxy_execute_delete(&proxy_execute);
 }
+
+TEST(execute, concurrent) {
+    // Executions on different threads keep their own native functions and results
+    std::vector<std::thread> threads;
+    for (int32_t i = 0; i < 8; i++) {
+        threads.emplace_back([i] {
+            const std::string proxy = "PROXY t" + std::to_string(i) + "-";
+            const std::string script = "function FindProxyForURL(url, host) { return \"" + proxy +
+                "\" + dnsResolve(\"127.0.0.1\") + \":80\"; }";
+            const std::string expected = proxy + "127.0.0.1:80";
+            for (int32_t j = 0; j < 10; j++) {
+                void *proxy_execute = proxy_execute_create();
+                ASSERT_NE(proxy_execute, nullptr);
+                EXPECT_TRUE(proxy_execute_get_proxies_for_url(proxy_execute, script.c_str(), "http://a/"));
+                EXPECT_STREQ(proxy_execute_get_list(proxy_execute), expected.c_str());
+                proxy_execute_delete(&proxy_execute);
+            }
+        });
+    }
+    for (auto &thread : threads)
+        thread.join();
+}
+
+#ifdef _WIN32
+TEST(execute, keeps_caller_com_initialization) {
+    std::thread thread([] {
+        ASSERT_TRUE(SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED)));
+        void *proxy_execute = proxy_execute_create();
+        EXPECT_NE(proxy_execute, nullptr);
+        if (proxy_execute) {
+            EXPECT_TRUE(proxy_execute_get_proxies_for_url(
+                proxy_execute, "function FindProxyForURL(url, host) { return 'DIRECT'; }", "http://a/"));
+            EXPECT_STREQ(proxy_execute_get_list(proxy_execute), "DIRECT");
+            proxy_execute_delete(&proxy_execute);
+        }
+        // The caller's multithreaded apartment is still initialized
+        EXPECT_EQ(CoInitializeEx(NULL, COINIT_MULTITHREADED), S_FALSE);
+        CoUninitialize();
+        CoUninitialize();
+    });
+    thread.join();
+}
+#endif
