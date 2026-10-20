@@ -206,6 +206,25 @@ TEST_F(resolver, pac_url_script_failure) {
     proxy_resolver_delete(&proxy_resolver);
 }
 
+TEST_F(resolver, pac_url_concurrent) {
+    http_server server(pac_response(pac_script));
+    proxy_config_set_auto_config_url_override(server.url("/pac.js").c_str());
+
+    // Resolve on several threads at once while none of them has cached the script yet
+    void *proxy_resolvers[8] = {};
+    for (auto &proxy_resolver : proxy_resolvers) {
+        proxy_resolver = proxy_resolver_create();
+        ASSERT_NE(proxy_resolver, nullptr);
+    }
+    for (auto &proxy_resolver : proxy_resolvers)
+        EXPECT_TRUE(proxy_resolver_get_proxies_for_url(proxy_resolver, "http://simple.com/"));
+    for (auto &proxy_resolver : proxy_resolvers) {
+        EXPECT_TRUE(proxy_resolver_wait(proxy_resolver, RESOLVE_TIMEOUT_MS));
+        EXPECT_STREQ(proxy_resolver_get_list(proxy_resolver), "http://no-such-proxy:80");
+        proxy_resolver_delete(&proxy_resolver);
+    }
+}
+
 TEST_F(resolver, next_proxy) {
     http_server server(pac_response(pac_script));
     proxy_config_set_auto_config_url_override(server.url("/pac.js").c_str());

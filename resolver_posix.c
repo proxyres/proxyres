@@ -130,8 +130,10 @@ bool proxy_resolver_posix_get_proxies_for_url(void *ctx, const char *url) {
     bool locked = false;
     bool is_ok = false;
 
+    // Resolves run on several threads that share the WPAD and PAC script cache
+    locked = mutex_lock(g_proxy_resolver_posix.mutex);
+
     if (proxy_config_get_auto_discover()) {
-        locked = mutex_lock(g_proxy_resolver_posix.mutex);
         // Discover the proxy auto config url
         auto_config_url = proxy_resolver_posix_wpad_discover();
     }
@@ -143,6 +145,14 @@ bool proxy_resolver_posix_get_proxies_for_url(void *ctx, const char *url) {
     if (auto_config_url) {
         // Download proxy auto config script if available
         script = proxy_resolver_posix_fetch_pac(auto_config_url, &proxy_resolver->error);
+        // Copy the script since another thread can replace the cached one once unlocked
+        if (script) {
+            script = strdup(script);
+            if (!script) {
+                proxy_resolver->error = ENOMEM;
+                log_error("Unable to allocate memory for %s (%" PRId32 ")", "script", proxy_resolver->error);
+            }
+        }
         locked = locked && !mutex_unlock(g_proxy_resolver_posix.mutex);
 
         if (!script)
@@ -156,7 +166,7 @@ bool proxy_resolver_posix_get_proxies_for_url(void *ctx, const char *url) {
             goto posix_done;
         }
 
-        if (!proxy_execute_get_proxies_for_url(proxy_execute, g_proxy_resolver_posix.script, url)) {
+        if (!proxy_execute_get_proxies_for_url(proxy_execute, script, url)) {
             proxy_resolver->error = proxy_execute_get_error(proxy_execute);
             log_error("Unable to get proxies for url (%" PRId32 ")", proxy_resolver->error);
             goto posix_done;
@@ -182,6 +192,7 @@ posix_done:
     event_set(proxy_resolver->complete);
 
     free(proxy);
+    free(script);
     free(auto_config_url);
 
     return is_ok;
