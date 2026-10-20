@@ -132,6 +132,11 @@ bool proxy_resolver_posix_get_proxies_for_url(void *ctx, const char *url) {
 
     // Resolves run on several threads that share the WPAD and PAC script cache
     locked = mutex_lock(g_proxy_resolver_posix.mutex);
+    if (!locked) {
+        proxy_resolver->error = ENOLCK;
+        log_error("Unable to lock %s (%" PRId32 ")", "script cache", proxy_resolver->error);
+        goto posix_done;
+    }
 
     if (proxy_config_get_auto_discover()) {
         // Discover the proxy auto config url
