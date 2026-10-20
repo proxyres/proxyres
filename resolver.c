@@ -308,7 +308,8 @@ bool proxy_resolver_global_init(void) {
         return false;
     }
 
-#if defined(__linux__) && defined(PROXYRES_EXECUTE)
+    // Match the platforms where global init selects the posix resolver
+#if defined(PROXYRES_EXECUTE) && (defined(HAVE_DUKTAPE) || defined(__linux__))
     // Pass threadpool to posix resolver to immediately start wpad discovery
     if (g_proxy_resolver.proxy_resolver_i == proxy_resolver_posix_get_interface()) {
         if (!proxy_resolver_posix_init_ex(g_proxy_resolver.threadpool)) {
